@@ -9,9 +9,10 @@ Bot Webhook 处理器
 
 import json
 import logging
+import threading
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
-from bot.models import WebhookResponse
+from bot.models import BotResponse, WebhookResponse
 from bot.dispatcher import get_dispatcher
 from bot.platforms import ALL_PLATFORMS
 
@@ -136,3 +137,63 @@ def handle_wecom_webhook(headers: Dict[str, str], body: bytes) -> WebhookRespons
 def handle_telegram_webhook(headers: Dict[str, str], body: bytes) -> WebhookResponse:
     """处理 Telegram Webhook"""
     return handle_webhook('telegram', headers, body)
+
+
+def handle_discord_interaction(headers: Dict[str, str], body: bytes) -> WebhookResponse:
+    """
+    处理 Discord Interactions Endpoint 请求
+
+    Discord 要求 3 秒内响应，而 /chat、/ask 等命令可能耗时较长，
+    因此命令消息先返回延迟响应（type 5），在后台线程中执行命令后
+    通过 Interaction Webhook 回填结果。
+
+    Args:
+        headers: HTTP 请求头
+        body: 请求体原始字节
+
+    Returns:
+        WebhookResponse 响应对象
+    """
+    # 每次请求重新创建适配器，使 WebUI 中修改的 DISCORD_PUBLIC_KEY 立即生效
+    from bot.platforms.discord import DiscordPlatform
+    platform = DiscordPlatform()
+
+    try:
+        data = json.loads(body.decode('utf-8')) if body else {}
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        logger.error(f"[BotHandler] Discord JSON 解析失败: {e}")
+        return WebhookResponse.error("Invalid JSON", 400)
+
+    # 签名验证和 PING 必须在启用开关之前处理，否则 Discord 无法完成端点校验
+    message, early_response = platform.handle_webhook(headers, body, data)
+    if early_response:
+        return early_response
+
+    if not message:
+        logger.debug("[BotHandler] Discord 无需处理的交互")
+        return WebhookResponse.success()
+
+    from src.config import get_config
+    if not getattr(get_config(), 'bot_enabled', True):
+        logger.info("[BotHandler] 机器人功能未启用")
+        return platform.format_response(
+            BotResponse.text_response("机器人功能未启用"), message
+        )
+
+    logger.info(f"[BotHandler] 解析到 Discord 命令: user={message.user_name}, content={message.content[:50]}")
+
+    def _run_and_followup() -> None:
+        try:
+            response = get_dispatcher().dispatch(message)
+        except Exception as e:  # dispatcher 内部已兜底，此处防御线程静默退出
+            logger.exception(f"[BotHandler] Discord 命令执行异常: {e}")
+            response = BotResponse.error_response("命令执行失败")
+        platform.send_followup(message, response)
+
+    threading.Thread(
+        target=_run_and_followup,
+        name="discord-interaction",
+        daemon=True,
+    ).start()
+
+    return platform.deferred_response()

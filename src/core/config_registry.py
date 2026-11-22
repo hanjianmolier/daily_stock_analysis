@@ -958,6 +958,20 @@ _FIELD_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         "validation": {},
         "display_order": 35,
     },
+    "DISCORD_PUBLIC_KEY": {
+        "title": "Discord Public Key",
+        "description": "Discord application public key used to verify slash command (Interactions Endpoint) requests.",
+        "category": "notification",
+        "data_type": "string",
+        "ui_control": "text",
+        "is_sensitive": False,
+        "is_required": False,
+        "is_editable": True,
+        "default_value": None,
+        "options": [],
+        "validation": {},
+        "display_order": 36,
+    },
     # ------------------------------------------------------------------
     # Notification – Pushover
     # ------------------------------------------------------------------

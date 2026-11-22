@@ -98,6 +98,7 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL | Optional |
 | `DISCORD_BOT_TOKEN` | Discord Bot Token (choose one with Webhook) | Optional |
 | `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID (required when using Bot) | Optional |
+| `DISCORD_PUBLIC_KEY` | Discord application public key; enables the slash command endpoint `/bot/discord` | Optional |
 | `EMAIL_SENDER` | Sender email (e.g., `xxx@qq.com`) | Optional |
 | `EMAIL_PASSWORD` | Email authorization code (not login password) | Optional |
 | `EMAIL_RECEIVERS` | Receiver emails (comma-separated, leave empty to send to yourself) | Optional |
@@ -258,6 +259,8 @@ Bot:
 DISCORD_BOT_TOKEN=your_bot_token
 DISCORD_MAIN_CHANNEL_ID=your_channel_id
 ```
+
+Slash commands (optional, needs a publicly reachable API server): set `DISCORD_PUBLIC_KEY` to the application's Public Key and point the app's Interactions Endpoint URL at `https://<your-host>/bot/discord`. See [Discord bot setup](bot/discord-bot-config.md).
 
 ### 3. Email
 
