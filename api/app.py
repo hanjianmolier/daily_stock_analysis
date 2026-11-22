@@ -26,6 +26,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from api.v1 import api_v1_router
 from api.middlewares.auth import add_auth_middleware
@@ -170,6 +171,27 @@ def create_app(static_dir: Optional[Path] = None) -> FastAPI:
             timestamp=datetime.now().isoformat()
         )
     
+    # ============================================================
+    # 机器人回调（不在 /api/v1 下，不受 WebUI 登录鉴权影响，由平台签名保护）
+    # ============================================================
+
+    @app.post("/bot/discord", include_in_schema=False)
+    async def discord_interactions(request: Request):
+        """Discord Interactions Endpoint（Slash 命令），需配置 DISCORD_PUBLIC_KEY"""
+        from src.config import get_config
+
+        if not getattr(get_config(), "discord_public_key", None):
+            return JSONResponse(
+                status_code=404,
+                content={"error": "not_found", "message": "Discord interactions endpoint is not configured"},
+            )
+
+        from bot.handler import handle_discord_interaction
+
+        body = await request.body()
+        result = await run_in_threadpool(handle_discord_interaction, dict(request.headers), body)
+        return JSONResponse(status_code=result.status_code, content=result.body, headers=result.headers or None)
+
     # ============================================================
     # 静态文件托管（前端 SPA）
     # ============================================================

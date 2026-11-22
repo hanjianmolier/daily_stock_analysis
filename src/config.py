@@ -541,6 +541,8 @@ class Config:
 
     # Discord 机器人状态
     discord_bot_status: str = "A股智能分析 | /help"
+    # Discord Interactions Endpoint（Slash 命令）应用公钥，用于签名验证
+    discord_public_key: Optional[str] = None
 
     # === 流控配置（防封禁关键参数）===
     # Akshare 请求间隔范围（秒）
@@ -1035,6 +1037,7 @@ class Config:
             telegram_webhook_secret=os.getenv('TELEGRAM_WEBHOOK_SECRET'),
             # Discord 机器人扩展配置
             discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'A股智能分析 | /help'),
+            discord_public_key=os.getenv('DISCORD_PUBLIC_KEY') or None,
             # 实时行情增强数据配置
             enable_realtime_quote=os.getenv('ENABLE_REALTIME_QUOTE', 'true').lower() == 'true',
             enable_realtime_technical_indicators=os.getenv(

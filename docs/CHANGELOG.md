@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### 新功能
 
+- 🤖 **Discord Slash 命令回调** — 新增 `POST /bot/discord` Interactions Endpoint，支持在 Discord 中通过 `/analyze`、`/market`、`/chat` 等 Slash 命令触发分析。请求使用应用公钥（Ed25519）验证签名，验证失败返回 401；命令先返回延迟响应，执行完成后回填结果，避免 Discord 3 秒超时。完全可选（需配置 `DISCORD_PUBLIC_KEY`），未配置时端点返回 404。原 Discord 适配器中“签名验证恒为通过”的 TODO 一并修复。
 - 📱 **Social Sentiment Intelligence (US stocks)** — 新增 Reddit / X (Twitter) / Polymarket 社交媒体情绪数据源，为美股分析提供实时社交舆情情报。数据来自 api.adanos.org，包含 Buzz Score、情绪评分、提及量等指标。完全可选（需配置 `SOCIAL_SENTIMENT_API_KEY`），仅对美股生效，A 股 / 港股不受影响。
 ### 文档
 
